@@ -1,59 +1,85 @@
-# Quintero-Carrillo-post1-u4
+# apellido-post1-u4
 
 ## Descripción
 
-Laboratorio 1 de la Unidad 4 de la asignatura Arquitectura de Computadores
-(Universidad Francisco de Paula Santander, Ingeniería de Sistemas, 2026).
+Laboratorio 1 de la Unidad 4 — Lenguaje Ensamblador, correspondiente a la asignatura **Arquitectura de Computadores** de Ingeniería de Sistemas (UFPS, 2026).
 
-Se implementa un programa funcional en lenguaje ensamblador MASM para entorno
-DOS de 16 bits, aplicando las directivas de sección (.DATA, .BSS, .CODE) y de
-definición de datos (DB, DW, DD, RESB, EQU). Se inicializan correctamente los
-registros de segmento y se utiliza la interrupción DOS INT 21h (funciones 09h
-y 02h) para producir salida en pantalla. La ejecución se verifica mediante
-DOSBox y el proceso queda documentado en este repositorio GitHub.
+El programa implementa la estructura completa de un ejecutable NASM de 16 bits para entorno DOS: define datos inicializados y no inicializados usando las directivas `DB`, `DW`, `DD`, `RESB`, `RESW` y `EQU`, inicializa correctamente el registro de segmento `DS`, y produce salida en pantalla utilizando las interrupciones DOS `INT 21h` (función `09h` para cadenas y función `02h` para caracteres individuales). El bucle de impresión de la tabla de bytes demuestra el uso del registro índice `SI` junto con la instrucción `LOOP`.
+
+---
 
 ## Prerrequisitos
 
-- VS Code con la extensión **MASM/TASM** instalada
-  (Autor: blindtiger — ID: xsro.masm-tasm)
-- DOSBox 0.74 o superior instalado y configurado en la extensión
-- Git instalado para control de versiones
+- **DOSBox 0.74** o superior instalado ([dosbox.com](https://www.dosbox.com))
+- **NASM 2.14** o superior — el ejecutable `nasm.exe` debe estar disponible en el PATH de Windows o en la carpeta de trabajo
+- **ALINK** — el enlazador `alink.exe` debe estar en la misma carpeta de trabajo (o en el PATH)
+- Editor de texto plano (Notepad++, VS Code, etc.) — guardar los `.asm` con codificación **ASCII sin BOM**
+
+---
 
 ## Estructura del repositorio
 
-lab-post1-u4/
-├── programa.asm        # Código fuente principal en MASM
-├── README.md           # Este archivo de documentación
+```
+quintero carrillo-post1-u4/
+├── programa.asm       ← código fuente NASM comentado
+├── README.md          ← este archivo
 └── capturas/
-    ├── compilacion.png # Captura del proceso de compilación exitoso
-    └── ejecucion.png   # Captura de la ejecución en DOSBox
+    ├── Configuración de Entorno.png
+    ├── compilacion.png   ← captura de ensamblado y enlazado exitosos
+    └── ejecucion.png     ← captura de la salida en DOSBox
+```
 
-## Compilación y ejecución
+---
 
-### Opción 1 — Desde VS Code (recomendada):
-1. Abrir `programa.asm` en el editor
-2. Presionar `F6` para compilar y ejecutar automáticamente en DOSBox
-3. La extensión invoca `ml.exe` y abre DOSBox con el resultado
+## Compilación y enlazado (terminal de Windows)
 
-### Opción 2 — Manualmente desde DOSBox:
+Los pasos de ensamblado y enlazado se ejecutan desde la **terminal de Windows** (CMD o PowerShell), no desde DOSBox, porque `nasm.exe` y `alink.exe` son aplicaciones de Windows.
 
-C:> ml programa.asm
-C:> programa.exe
+```cmd
+:: Paso 1 — Ensamblar: genera el archivo objeto programa.obj
+nasm -f obj programa.asm -o programa.obj
 
-## Salida esperada en pantalla
-=== Laboratorio MASM - Unidad 4 ===
+:: Paso 2 — Enlazar: genera el ejecutable DOS programa.exe
+alink programa.obj -oEXE -o programa.exe -entry main
+```
+
+Si NASM detecta errores de sintaxis, los reporta con el número de línea:
+
+```
+programa.asm:42: error: parser: instruction expected
+```
+
+Corregir el error indicado y repetir el paso 1.
+
+---
+
+## Ejecución en DOSBox
+
+Una vez generado `programa.exe`, copiarlo a la carpeta que DOSBox tiene montada y ejecutarlo desde DOSBox:
+
+```
+Z:\> mount C C:\ruta\a\tu\carpeta
+Z:\> C:
+C:\> programa.exe
+```
+
+### Salida esperada en pantalla
+
+```
+=== Laboratorio NASM — Unidad 4 ===
 Variable A (word):  Z
-: ; < = >
+: : [elementos de la tabla separados por espacios]
 Programa finalizado correctamente.
+```
 
-## Conceptos demostrados
+## Explicación del código
 
-- Modelo de memoria SMALL con directiva `.MODEL SMALL`
-- Declaración de pila con `.STACK`
-- Sección de datos inicializados con `.DATA` (DB, DW, DD)
-- Sección de datos no inicializados con `.DATA?` (equivalente a .bss)
-- Constantes simbólicas con `EQU`
-- Inicialización del registro `DS` mediante registro intermediario `AX`
-- Función `09h` de `INT 21h` para imprimir cadenas terminadas en `$`
-- Función `02h` de `INT 21h` para imprimir caracteres individuales
-- Recorrido de arreglo con registro de índice `SI` e instrucción `LOOP`
+| Sección | Propósito |
+|---------|-----------|
+| Constantes `EQU` | Definen `CR`, `LF`, `TERMINADOR` e `ITERACIONES` sin reservar memoria |
+| `.data` | Almacena cadenas y variables con valores iniciales (`DB`, `DW`, `DD`) |
+| `.bss` | Reserva espacio sin inicializar para `buffer` y `resultado` (`RESB`, `RESW`) |
+| `.text` | Contiene el código ejecutable; `main` inicializa `DS` y llama a `INT 21h` |
+
+La instrucción `mov ax, @data` / `mov ds, ax` es **obligatoria** en modo real de 16 bits para que el segmento `DS` apunte correctamente a la sección `.data` antes de cualquier acceso a memoria de datos.
+
